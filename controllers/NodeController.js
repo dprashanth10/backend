@@ -68,6 +68,13 @@ const convertToCustomFormat = (dateTimeString, isEndDate = false) => {
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 };
 
+const parseDateTime = (dateTimeString) => {
+  const [datePart, timePart] = dateTimeString.split(" ");
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hours, minutes, seconds] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes, seconds);
+};
+
 // Filter Nodes by Timestamp and nodeValue
 const filterByTimestamp = async (req, res) => {
   console.log("Filtering by timestamps and nodeValue...");
@@ -84,13 +91,6 @@ const filterByTimestamp = async (req, res) => {
         "start, end, and nodeValue are required fields in the format dd/mm/yyyy hh:mm:ss",
     });
   }
-
-  const parseDateTime = (dateTimeString) => {
-    const [datePart, timePart] = dateTimeString.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    const [hours, minutes, seconds] = timePart.split(":").map(Number);
-    return new Date(year, month - 1, day, hours, minutes, seconds);
-  };
 
   try {
     // const startDate = parseDateTime(start);
@@ -132,10 +132,130 @@ const filterByTimestamp = async (req, res) => {
 };
 
 // started creating filterTimeRangeGraph controller on 10-04-2025
+// const filterByTimeRange = async (req, res) => {
+//   console.log("Filtering by timestamps and nodeValue...");
+//   const { timeRange, nodeValue, endDate } = req.body; // Accept timeRange from the request body
+//   // const { page = 1, limit = 10 } = req.query; // Pagination parameters
+
+//   console.log("enddate", endDate);
+
+//   if (!timeRange || !nodeValue) {
+//     return res.status(400).json({
+//       message: "timeRange and nodeValue are required fields",
+//     });
+//   }
+
+//   // Calculate startDate based on timeRange
+//   const now = new Date();
+//   let startDate;
+
+//   switch (timeRange) {
+//     case "1h":
+//       startDate = new Date(now.getTime() - 1 * 60 * 60 * 1000); // 1 hour ago
+//       break;
+//     case "5h":
+//       startDate = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
+//       break;
+//     case "1d":
+//       startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
+//       break;
+//     default:
+//       return res.status(400).json({ message: "Invalid timeRange value" });
+//   }
+
+//   try {
+//     const nodes = await Node.find({
+//       nodeValue: nodeValue,
+//       createdAt: { $gte: startDate },
+//       isDeleted: { $ne: true },
+//     })
+//       .sort({ createdAt: -1 })
+//       .lean();
+
+//     // .sort({ createdAt: -1 })
+//     // .skip((page - 1) * limit)
+//     // .limit(Number(limit))
+//     // .lean();
+
+//     // const totalNodes = await Node.countDocuments({
+//     //   nodeValue: nodeValue,
+//     //   createdAt: { $gte: startDate },
+//     //   isDeleted: { $ne: true },
+//     // });
+
+//     // const totalPages = Math.ceil(totalNodes / limit);
+
+//     res.status(200).json({ data: nodes });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: `An error occurred: ${err.message}` });
+//   }
+// };
+
+// const filterByTimeRange = async (req, res) => {
+//   console.log("Filtering by timerange and nodeValue...");
+//   const { timeRange, nodeValue, startDate, endDate } = req.body; // Accept timeRange from the request body
+//   // const { page = 1, limit = 10 } = req.query; // Pagination parameters
+
+//   console.log("startdate and enddate", startDate, endDate);
+
+//   if (!timeRange || !nodeValue) {
+//     return res.status(400).json({
+//       message: "timeRange and nodeValue are required fields",
+//     });
+//   }
+
+//   let calcStartDate;
+//   let calcEndDate;
+//   let now;
+//   if (startDate && endDate) {
+//     now = new Date(`${endDate}`); // Use endDate as the reference point 2025-04-15T23:36
+//     calcEndDate = new Date(now.getTime()); // Use endDate as the reference point
+//   } else {
+//     // Calculate startDate based on timeRange
+//     now = new Date();
+//   }
+
+//   switch (timeRange) {
+//     case "1h":
+//       calcStartDate = new Date(now.getTime() - 1 * 60 * 60 * 1000); // 1 hour ago
+//       break;
+//     case "5h":
+//       calcStartDate = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
+//       break;
+//     case "1d":
+//       calcStartDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
+//       break;
+//     default:
+//       return res.status(400).json({ message: "Invalid timeRange value" });
+//   }
+
+//   const query = {
+//     nodeValue: nodeValue,
+//     createdAt: { $gte: calcStartDate },
+//     isDeleted: { $ne: true },
+//   };
+
+//   if (startDate && endDate) {
+//     query.createdAt.$lte = calcEndDate;
+//   }
+
+//   try {
+//     const nodes = await Node.find(query).sort({ createdAt: -1 }).lean();
+
+//     res.status(200).json({ data: nodes });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: `An error occurred: ${err.message}` });
+//   }
+// };
+
 const filterByTimeRange = async (req, res) => {
-  console.log("Filtering by timestamps and nodeValue...");
-  const { timeRange, nodeValue } = req.body; // Accept timeRange from the request body
+  console.log("Filtering by timerange and nodeValue...");
+  const { timeRange, nodeValue, startDate: start, endDate: end } = req.body; // Accept timeRange from the request body
   // const { page = 1, limit = 10 } = req.query; // Pagination parameters
+
+  console.log("startdate and enddate", start, end);
 
   if (!timeRange || !nodeValue) {
     return res.status(400).json({
@@ -143,52 +263,79 @@ const filterByTimeRange = async (req, res) => {
     });
   }
 
-  // Calculate startDate based on timeRange
-  const now = new Date();
-  let startDate;
+  if (start && end) {
+    console.log("inside start and end", start, end);
 
-  switch (timeRange) {
-    case "1h":
-      startDate = new Date(now.getTime() - 1 * 60 * 60 * 1000); // 1 hour ago
-      break;
-    case "5h":
-      startDate = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
-      break;
-    case "1d":
-      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
-      break;
-    default:
-      return res.status(400).json({ message: "Invalid timeRange value" });
-  }
+    try {
+      let endDate = new Date(end);
+      let startDate = new Date(end);
 
-  try {
-    const nodes = await Node.find({
+      switch (timeRange) {
+        case "1h":
+          startDate.setHours(endDate.getHours() - 1);
+          break;
+        case "5h":
+          startDate.setHours(endDate.getHours() - 5);
+          break;
+        case "1d":
+          startDate.setDate(endDate.getDate() - 1);
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid timeRange value" });
+      }
+      console.log("after converting start end", startDate, endDate);
+
+      const query = {
+        nodeValue: nodeValue,
+        createdAt: { $gte: startDate, $lte: endDate },
+        isDeleted: { $ne: true },
+      };
+
+      const nodes = await Node.find(query).sort({ createdAt: -1 }).lean();
+
+      res.status(200).json({ data: nodes });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: `An error occurred: ${err.message}` });
+    }
+  } else {
+    console.log("inside else", start, end);
+
+    let calcStartDate;
+    let calcEndDate;
+    let now = new Date();
+
+    switch (timeRange) {
+      case "1h":
+        calcStartDate = new Date(now.getTime() - 1 * 60 * 60 * 1000); // 1 hour ago
+        break;
+      case "5h":
+        calcStartDate = new Date(now.getTime() - 5 * 60 * 60 * 1000); // 5 hours ago
+        break;
+      case "1d":
+        calcStartDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 day ago
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid timeRange value" });
+    }
+
+    const query = {
       nodeValue: nodeValue,
-      createdAt: { $gte: startDate },
+      createdAt: { $gte: calcStartDate },
       isDeleted: { $ne: true },
-    })
-      .sort({ createdAt: -1 })
-      .lean();
+    };
 
-    // .sort({ createdAt: -1 })
-    // .skip((page - 1) * limit)
-    // .limit(Number(limit))
-    // .lean();
+    try {
+      const nodes = await Node.find(query).sort({ createdAt: -1 }).lean();
 
-    // const totalNodes = await Node.countDocuments({
-    //   nodeValue: nodeValue,
-    //   createdAt: { $gte: startDate },
-    //   isDeleted: { $ne: true },
-    // });
-
-    // const totalPages = Math.ceil(totalNodes / limit);
-
-    res.status(200).json({ data: nodes });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: `An error occurred: ${err.message}` });
+      res.status(200).json({ data: nodes });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: `An error occurred: ${err.message}` });
+    }
   }
 };
+
 // ending filterTimeRangeGraph controller on 10-04-2025
 
 // fetching data from Firebase on 10-04-2025
